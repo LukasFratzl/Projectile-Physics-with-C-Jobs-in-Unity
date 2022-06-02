@@ -13,7 +13,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 11439282, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_ScaleFactor
-      value: 0.32
+      value: 0.65
       objectReference: {fileID: 0}
     - target: {fileID: 11439282, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_UiScaleMode

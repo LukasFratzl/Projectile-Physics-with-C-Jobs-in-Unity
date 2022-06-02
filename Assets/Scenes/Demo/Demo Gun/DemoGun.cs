@@ -22,8 +22,8 @@ namespace flow____.Combat
             {
                 if (testList.Count > 0)
                 {
-                    _manager.DestroyProjectile(testList[testList.Count - 1]);
-                    testList.RemoveAt(testList.Count - 1);
+                    GameObject go = testList[testList.Count - 1];
+                    _manager.UnregisterProjectile(go, (ProjectileManager.DestroyProjectileResult result) => testList.Remove(go));
                 }
             }
         }
