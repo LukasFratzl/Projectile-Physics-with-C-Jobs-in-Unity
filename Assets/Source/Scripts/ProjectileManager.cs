@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using Unity.Burst;
 using Unity.Mathematics;
@@ -31,6 +30,13 @@ namespace flow____.Combat
             public ProjectileData ProjectileData;
         }
 
+        public struct DestroyProjectileResult
+        {
+            public GameObject ProjectileInSpawnPool;
+            public bool SuccessPooling;
+            public ProjectileData ProjectileData;
+        }
+
         [SerializeField] protected ProjectileProfile[] _Profiles = default;
 
         void Awake()
@@ -41,34 +47,33 @@ namespace flow____.Combat
             }
         }
 
-        List<GameObject> testList = new List<GameObject>();
-
-        void Update()
-        {
-            if (Input.GetKey(KeyCode.Mouse0))
-            {
-                Fire(float3.zero, Vector3.forward, _Profiles[0].ProjectilePrefab);
-            }
-            if (Input.GetKey(KeyCode.Mouse1))
-            {
-                if (testList.Count > 0)
-                {
-                    PoolProjectile(testList[testList.Count - 1]);
-                    testList.RemoveAt(testList.Count - 1);
-                }
-            }
-        }
-
         void OnDestroy()
         {
             StopAllCoroutines();
         }
 
-        public void Fire(float3 startPosition, float3 forward, GameObject ProjectilePrefab)
+        public FireResult Fire(float3 startPosition, float3 forward, GameObject ProjectilePrefab)
         {
-            GameObject p = SpawnProjectile(startPosition, forward, ProjectilePrefab);
-            testList.Add(p);
+            FireResult result = new FireResult();
+            var spawnResult = SpawnProjectile(startPosition, forward, ProjectilePrefab);
+            result.Projectile = spawnResult.projectile;
+            result.ProjectileData = spawnResult.profile.ProjectileData;
+
+            return result;
         }
+
+        public DestroyProjectileResult DestroyProjectile(GameObject ProjectileRuntime)
+        {
+            DestroyProjectileResult result = new DestroyProjectileResult();
+            var poolResult = PoolProjectile(ProjectileRuntime);
+            result.SuccessPooling = poolResult.success;
+            result.ProjectileInSpawnPool = ProjectileRuntime;
+            result.ProjectileData = poolResult.profile.ProjectileData;
+
+            return result;
+        }
+
+
 
         public void RegisterProjectileProfile(ProjectileProfile _profile)
         {
@@ -150,7 +155,7 @@ namespace flow____.Combat
             }
         }
 
-        GameObject SpawnProjectile(float3 position, float3 forward, GameObject ProjectilePrefab)
+        (GameObject projectile, ProjectileProfile profile) SpawnProjectile(float3 position, float3 forward, GameObject ProjectilePrefab)
         {
             ProjectileProfile _profile = null;
             for (int p = 0; p < _Profiles.Length; p++)
@@ -173,19 +178,19 @@ namespace flow____.Combat
                 GameObject _go = Instantiate(ProjectilePrefab, position, Quaternion.LookRotation(math.normalize(forward)));
                 _go.name = string.Format(_projectilePoolName, _profile.ProjectilePrefab.GetHashCode());
                 if (_go.activeInHierarchy == false) _go.SetActive(true);
-                return _go;
+                return (_go, _profile);
             }
             if (projectile != null)
             {
                 projectile.position = position;
                 projectile.rotation = Quaternion.LookRotation(math.normalize(forward));
                 projectile.gameObject.SetActive(true);
-                return projectile.gameObject;
+                return (projectile.gameObject, _profile);
             }
             return default;
         }
 
-        bool PoolProjectile(GameObject projectile)
+        (bool success, ProjectileProfile profile) PoolProjectile(GameObject projectile)
         {
             ProjectileProfile _profile = null;
             for (int p = 0; p < _Profiles.Length; p++)
@@ -205,7 +210,7 @@ namespace flow____.Combat
             {
                 projectile.SetActive(false);
                 projectile.transform.parent = _profile._poolRoot;
-                return true;
+                return (true, _profile);
             }
         }
 
