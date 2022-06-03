@@ -1149,42 +1149,5 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[0].ProjectilePrefab
-      value: 
-      objectReference: {fileID: 2125642497454340971, guid: 7a9466158bd7eb34dac3ae94f8937093,
-        type: 3}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[1].ProjectilePrefab
-      value: 
-      objectReference: {fileID: 2125642497454340971, guid: 7a9466158bd7eb34dac3ae94f8937093,
-        type: 3}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[0].ProjectilePreLoad
-      value: 10000
-      objectReference: {fileID: 0}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[1].ProjectilePreLoad
-      value: 10000
-      objectReference: {fileID: 0}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[0].ProjectilesPreLoadPerFrame
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 9211345761351179748, guid: 3e7362c8b13ef884289aee75bca61dd9,
-        type: 3}
-      propertyPath: _Profiles.Array.data[1].ProjectilesPreLoadPerFrame
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3e7362c8b13ef884289aee75bca61dd9, type: 3}

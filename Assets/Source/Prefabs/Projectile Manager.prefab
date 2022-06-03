@@ -44,3 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fec7cc2f5c2f1ba45ada8ec2af1b84b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Profiles:
+  - ProjectilePreLoad: 10000
+    ProjectilesPreLoadPerFrame: 1
+    ProjectilePrefab: {fileID: 2125642497454340971, guid: 7a9466158bd7eb34dac3ae94f8937093,
+      type: 3}
+    ProjectileData: {fileID: 11400000, guid: 21c07fb58f9f3d14889aa82e4eb59b5b, type: 2}
+    _poolRoot: {fileID: 0}
+    _finishedPrePool: 0
+    _projectileNameInPool: 

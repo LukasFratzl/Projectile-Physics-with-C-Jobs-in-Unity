@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -40,6 +41,7 @@ namespace flow____.Combat
         }
 
         [SerializeField] protected ProjectileProfile[] _Profiles = default;
+        protected Dictionary<string, ProjectileProfile> _ProfilesHashMap = new Dictionary<string, ProjectileProfile>();
 
         List<Transform> toRegisterProjectiles = new List<Transform>();
         List<(Transform runtimeProjectile, Action<DestroyProjectileResult> onDone)> toUnregisterProjectiles = new List<(Transform runtimeProjectile, Action<DestroyProjectileResult> onDone)>();
@@ -49,6 +51,8 @@ namespace flow____.Combat
 
         void Awake()
         {
+            _parallelOption = new ParallelOptions();
+            _parallelOption.MaxDegreeOfParallelism = -1;
             for (int p = 0; p < _Profiles.Length; p++)
             {
                 RegisterProjectileProfile(_Profiles[p]);
@@ -178,6 +182,8 @@ namespace flow____.Combat
             }
         }
 
+        ParallelOptions _parallelOption;
+
         void HandleSchedulling(float _deltaTime)
         {
             if (_job.Equals(default(ProjectileJob))) _job = new ProjectileJob();
@@ -186,6 +192,18 @@ namespace flow____.Combat
             _job._deltaTime = _deltaTime;
 
             // STUFF
+            Parallel.For(0, _Profiles.Length, _parallelOption, (int p) =>
+            {
+                if (string.IsNullOrEmpty(_Profiles[p]._projectileNameInPool) == false)
+                {
+                    ProjectileData data = _Profiles[p].ProjectileData;
+
+                    for (int i = 0; i < _projectileTransformToCompute.Count; i++)
+                    {
+                        HandleAssignValuesMotion(data, i);
+                    }
+                }
+            });
 
 
             // SCHEDULLE
@@ -194,7 +212,14 @@ namespace flow____.Combat
 
         void HandleCompliting()
         {
-            if (_transformArray.isCreated == false) return;
+            if (_transformArray.isCreated == false)
+            {
+                if (_projectileJobHandle.Equals(default(JobHandle)) == false)
+                {
+                    _projectileJobHandle.Complete();
+                    _projectileJobHandle = default(JobHandle);
+                }
+            }
 
             _projectileJobHandle.Complete();
         }
@@ -213,7 +238,7 @@ namespace flow____.Combat
 
             public void Execute(int _i, TransformAccess _transform)
             {
-                TestMove(_i, _transform, _deltaTime);
+                ProjectileMove(_i, _transform);
             }
         }
     }
