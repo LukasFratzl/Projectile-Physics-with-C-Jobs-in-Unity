@@ -7,3 +7,4 @@ Features:
 - Gravity with 3 Axis in World Space
 - Works with Profiles for each projectile type
 - Projectile Prefab does not require a single Script, just a GameObject with a Transform is enough
+- Really Good Performance
