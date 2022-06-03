@@ -11,21 +11,23 @@ namespace flow____.Combat
             public float3 _lastPosition;
             public float3 _currentPosition;
             public Transform _runtimeProjectile;
+            public LayerMask _hitLayer;
 
-            public CollisionData(Transform runtimeProjectile)
+            public CollisionData(Transform runtimeProjectile, LayerMask hitLayer)
             {
                 _lastPosition = _currentPosition = runtimeProjectile.position;
                 _runtimeProjectile = runtimeProjectile;
+                _hitLayer = hitLayer;
             }
         }
 
         List<CollisionData> _collisionData = new List<CollisionData>();
         RaycastHit[] _hits = new RaycastHit[1];
-        [SerializeField] protected LayerMask _CollisionLayerMask;
+        // [SerializeField] protected LayerMask _CollisionLayerMask;
 
-        void AddCollisionData(Transform t)
+        void AddCollisionData(Transform t, ProjectileData data)
         {
-            if (_collisionData.Exists(x => x._runtimeProjectile == t) == false) _collisionData.Add(new CollisionData(t));
+            if (_collisionData.Exists(x => x._runtimeProjectile == t) == false) _collisionData.Add(new CollisionData(t, data.hitLayer));
         }
 
         void RemoveCollisionData(int index)
@@ -42,12 +44,11 @@ namespace flow____.Combat
                 _data._currentPosition = _data._runtimeProjectile.position;
 
                 float3 direction = _data._currentPosition - _data._lastPosition;
-                int hit = Physics.RaycastNonAlloc(_data._lastPosition, math.normalize(direction), _hits, direction.ToMagnitude(), _CollisionLayerMask, QueryTriggerInteraction.Ignore);
+                int hit = Physics.RaycastNonAlloc(_data._lastPosition, math.normalize(direction), _hits, direction.ToMagnitude(), _data._hitLayer, QueryTriggerInteraction.Ignore);
 
                 if (hit > 0)
                 {
-                    // Debug.Log(_data._runtimeProjectile.gameObject.GetHashCode());
-                    UnregisterProjectile(_data._runtimeProjectile.gameObject, null);
+                    UnregisterProjectile(_data._runtimeProjectile.gameObject, (UnregisterProjectileResult result) => OnHit?.Invoke(new ProjectileHitResult(_hits[0], result)));
                 }
 
                 _data._lastPosition = _data._currentPosition;

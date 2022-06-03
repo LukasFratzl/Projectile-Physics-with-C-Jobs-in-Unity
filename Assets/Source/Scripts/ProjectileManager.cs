@@ -51,6 +51,20 @@ namespace flow____.Combat
         protected ProjectileJob _job;
         public static ProjectileManager instance;
 
+        public struct ProjectileHitResult
+        {
+            public RaycastHit _hit;
+            public UnregisterProjectileResult _unregisterPraticleResult;
+
+            public ProjectileHitResult(RaycastHit hit, UnregisterProjectileResult unregisterPraticleResult)
+            {
+                _hit = hit;
+                _unregisterPraticleResult = unregisterPraticleResult;
+            }
+        }
+
+        public event Action<ProjectileHitResult> OnHit;
+
         void Awake()
         {
             if (instance == null || instance != this)
@@ -183,7 +197,7 @@ namespace flow____.Combat
                     toRegisterProjectiles.RemoveAt(r);
 
                     HandleAddtransformArray(entity._projectile, entity._data);
-                    AddCollisionData(entity._projectile);
+                    AddCollisionData(entity._projectile, entity._data);
                 }
 
                 if (_transformArray.isCreated == false) _transformArray = new TransformAccessArray(_projectileTransformToCompute.ToArray());

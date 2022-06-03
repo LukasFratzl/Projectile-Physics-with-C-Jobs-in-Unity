@@ -110,7 +110,10 @@ namespace flow____.Combat
                     projectileInitialPosition[_i] = _transform.position;
                 }
 
-                projectileCurrentVelocity[_i] += ((gravity[_i] * _deltaTime) + math.mul(_transform.rotation, -ProjectileHelper.Forward * airDensity[_i] * _deltaTime));
+                // FORCES
+                projectileCurrentVelocity[_i] += math.mul(_transform.rotation, -ProjectileHelper.Forward * airDensity[_i] * _deltaTime);
+                projectileCurrentVelocity[_i] += gravity[_i] * _deltaTime;
+                projectileCurrentVelocity[_i] += windSpeedVector[_i] * _deltaTime;
 
                 _transform.position += (projectileCurrentVelocity[_i] * _deltaTime).ToVector3();
                 _transform.rotation = Quaternion.LookRotation(math.normalize(projectileCurrentVelocity[_i]));

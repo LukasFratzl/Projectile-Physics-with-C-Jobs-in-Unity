@@ -17,5 +17,6 @@ namespace flow____.Combat
         public float3 windSpeedVector = float3.zero;
         [Range(0f, 10f)] public float airDensity = 1.225f;
         //[Range(100f, 10000f)] public float distanceToAutoRemoveProjectileFromInitialPosition = 1000f;
+        public LayerMask hitLayer;
     }
 }
