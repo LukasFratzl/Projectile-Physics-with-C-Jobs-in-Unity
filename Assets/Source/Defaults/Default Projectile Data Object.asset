@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c1bcae83fcb68244a9a9cd03756aa69, type: 3}
   m_Name: Default Projectile Data Object
   m_EditorClassIdentifier: 
-  muzzleVelocity_m_per_second: 910
+  muzzleVelocity_m_per_second: 10
   gravity:
     x: 0
     y: -9.81
@@ -22,4 +22,3 @@ MonoBehaviour:
     y: 0
     z: 0
   airDensity: 1.225
-  distanceToAutoRemoveProjectileFromInitialPosition: 1000

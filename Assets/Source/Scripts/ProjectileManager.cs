@@ -55,7 +55,7 @@ namespace flow____.Combat
         {
             if (instance == null || instance != this)
             {
-                if (instance != this)
+                if (instance != this && instance != null)
                 {
                     Debug.Log("More than 1 instance found.....");
                 }
@@ -185,6 +185,9 @@ namespace flow____.Combat
                     HandleAddtransformArray(entity._projectile, entity._data);
                     AddCollisionData(entity._projectile);
                 }
+
+                if (_transformArray.isCreated == false) _transformArray = new TransformAccessArray(_projectileTransformToCompute.ToArray());
+                else _transformArray.SetTransforms(_projectileTransformToCompute.ToArray());
             }
         }
 
@@ -210,6 +213,8 @@ namespace flow____.Combat
 
                     entity.onDone?.Invoke(result);
                 }
+
+                _transformArray.SetTransforms(_projectileTransformToCompute.ToArray());
             }
         }
 

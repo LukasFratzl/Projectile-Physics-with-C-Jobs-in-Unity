@@ -16,8 +16,6 @@ namespace flow____.Combat
             if (_projectileTransformToCompute.Contains(t) == false)
             {
                 _projectileTransformToCompute.Add(t);
-                if (_transformArray.isCreated) _transformArray.Dispose();
-                if (_transformArray.isCreated == false) _transformArray = new TransformAccessArray(_projectileTransformToCompute.ToArray());
                 HandleAllocationMotion();
                 if (_job._settingHash.IsCreated == false) _job._settingHash = new NativeList<int>(0, Allocator.Persistent);
                 _job._settingHash.Add(_data.GetHashCode());
@@ -29,8 +27,6 @@ namespace flow____.Combat
             if (index != -1)
             {
                 _projectileTransformToCompute.RemoveAt(index);
-                if (_transformArray.isCreated) _transformArray.Dispose();
-                if (_transformArray.isCreated == false) _transformArray = new TransformAccessArray(_projectileTransformToCompute.ToArray());
                 HandleDeallocationMotion(index);
                 _job._settingHash.RemoveAt(index);
             }
