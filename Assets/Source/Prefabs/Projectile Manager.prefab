@@ -44,6 +44,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fec7cc2f5c2f1ba45ada8ec2af1b84b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _CollisionLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
   _Profiles:
   - ProjectilePreLoad: 10000
     ProjectilesPreLoadPerFrame: 1

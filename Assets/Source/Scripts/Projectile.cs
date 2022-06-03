@@ -6,19 +6,25 @@ namespace flow____.Combat
 {
     public class Projectile : MonoBehaviour
     {
-        public struct ProjectileDataRuntime
+        [Range(0f, 5000f)] public float _UnregisterProfileAfterSeconds = 100f;
+
+        private float _removeSecondsRuntime;
+
+        void OnEnable()
         {
-            public float3 _gravity;
+            _removeSecondsRuntime = _UnregisterProfileAfterSeconds;
         }
 
-        public ProjectileDataRuntime _runtimeData;
-
-
-        public struct ProjectileJob : IJobParallelForTransform
+        void Update()
         {
-            public void Execute(int _i, TransformAccess transform)
+            if (_removeSecondsRuntime > 0)
             {
+                _removeSecondsRuntime -= Time.deltaTime;
 
+                if (_removeSecondsRuntime <= 0f)
+                {
+                    ProjectileManager.instance.UnregisterProjectile(this.gameObject, null);
+                }
             }
         }
     }

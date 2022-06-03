@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace flow____.Combat
             public ProjectileData ProjectileData;
         }
 
-        public struct DestroyProjectileResult
+        public struct UnregisterProjectileResult
         {
             public GameObject ProjectileInSpawnPool;
             public bool SuccessPooling;
@@ -43,14 +44,23 @@ namespace flow____.Combat
         [SerializeField] protected ProjectileProfile[] _Profiles = default;
         protected Dictionary<string, ProjectileProfile> _ProfilesHashMap = new Dictionary<string, ProjectileProfile>();
 
-        List<Transform> toRegisterProjectiles = new List<Transform>();
-        List<(Transform runtimeProjectile, Action<DestroyProjectileResult> onDone)> toUnregisterProjectiles = new List<(Transform runtimeProjectile, Action<DestroyProjectileResult> onDone)>();
+        List<(Transform _projectile, ProjectileData _data, float _registerTime)> toRegisterProjectiles = new List<(Transform _projectile, ProjectileData _data, float _registerTime)>();
+        List<(Transform runtimeProjectile, Action<UnregisterProjectileResult> onDone, float _unregisterTime)> toUnregisterProjectiles = new List<(Transform runtimeProjectile, Action<UnregisterProjectileResult> onDone, float _unregisterTime)>();
 
         protected JobHandle _projectileJobHandle;
         protected ProjectileJob _job;
+        public static ProjectileManager instance;
 
         void Awake()
         {
+            if (instance == null || instance != this)
+            {
+                if (instance != this)
+                {
+                    Debug.Log("More than 1 instance found.....");
+                }
+                instance = this;
+            }
             _parallelOption = new ParallelOptions();
             _parallelOption.MaxDegreeOfParallelism = -1;
             for (int p = 0; p < _Profiles.Length; p++)
@@ -76,8 +86,14 @@ namespace flow____.Combat
             Solve2(Time.deltaTime);
         }
 
+        void FixedUpdate()
+        {
+            OnFixedUpdateCollision();
+        }
+
         void Solve1(float _deltaTime)
         {
+            HandleUnregisterJobs();
             HandleRegisterJobs();
 
             HandleSchedulling(_deltaTime);
@@ -95,12 +111,21 @@ namespace flow____.Combat
             result.Projectile = spawnResult.projectile;
             result.ProjectileData = spawnResult.profile.ProjectileData;
 
-            if (toRegisterProjectiles.Contains(spawnResult.projectile.transform) == false) toRegisterProjectiles.Add(spawnResult.projectile.transform);
+            bool contains = false;
+            for (int i = 0; i < toRegisterProjectiles.Count; i++)
+            {
+                if (toRegisterProjectiles[i]._projectile == spawnResult.projectile.transform)
+                {
+                    contains = true;
+                    break;
+                }
+            }
+            if (contains == false) toRegisterProjectiles.Add((spawnResult.projectile.transform, result.ProjectileData, Time.timeSinceLevelLoad));
 
             return result;
         }
 
-        public void UnregisterProjectile(GameObject ProjectileRuntime, Action<DestroyProjectileResult> onDone)
+        public void UnregisterProjectile(GameObject ProjectileRuntime, Action<UnregisterProjectileResult> onDone)
         {
             bool contains = false;
             for (int i = 0; i < toUnregisterProjectiles.Count; i++)
@@ -111,7 +136,7 @@ namespace flow____.Combat
                     break;
                 }
             }
-            if (!contains) toUnregisterProjectiles.Add((ProjectileRuntime.transform, onDone));
+            if (!contains) toUnregisterProjectiles.Add((ProjectileRuntime.transform, onDone, Time.timeSinceLevelLoad));
         }
 
 
@@ -157,10 +182,14 @@ namespace flow____.Combat
                     var entity = toRegisterProjectiles[r];
                     toRegisterProjectiles.RemoveAt(r);
 
-                    HandleAddtransformArray(entity);
+                    HandleAddtransformArray(entity._projectile, entity._data);
+                    AddCollisionData(entity._projectile);
                 }
             }
+        }
 
+        void HandleUnregisterJobs()
+        {
             if (toUnregisterProjectiles.Count > 0)
             {
                 for (int r = toUnregisterProjectiles.Count - 1; r >= 0; r--)
@@ -169,15 +198,17 @@ namespace flow____.Combat
                     toUnregisterProjectiles.RemoveAt(r);
 
                     GameObject projectile = entity.runtimeProjectile?.gameObject;
-                    DestroyProjectileResult result = new DestroyProjectileResult();
+                    UnregisterProjectileResult result = new UnregisterProjectileResult();
                     var poolResult = PoolProjectile(projectile);
                     result.SuccessPooling = poolResult.success;
                     result.ProjectileInSpawnPool = projectile;
                     result.ProjectileData = poolResult.profile.ProjectileData;
 
-                    HandleRemoveTransformArray(entity.runtimeProjectile);
+                    int index = _projectileTransformToCompute.IndexOf(entity.runtimeProjectile);
+                    HandleRemoveTransformArray(index);
+                    RemoveCollisionData(index);
 
-                    entity.onDone.Invoke(result);
+                    entity.onDone?.Invoke(result);
                 }
             }
         }
@@ -188,6 +219,7 @@ namespace flow____.Combat
         {
             if (_job.Equals(default(ProjectileJob))) _job = new ProjectileJob();
             if (_transformArray.isCreated == false) return;
+            if (_transformArray.length == 0) return;
 
             _job._deltaTime = _deltaTime;
 
@@ -197,14 +229,16 @@ namespace flow____.Combat
                 if (string.IsNullOrEmpty(_Profiles[p]._projectileNameInPool) == false)
                 {
                     ProjectileData data = _Profiles[p].ProjectileData;
+                    int hash = data.GetHashCode();
 
                     for (int i = 0; i < _projectileTransformToCompute.Count; i++)
                     {
+                        if (hash != _job._settingHash[i]) continue;
+
                         HandleAssignValuesMotion(data, i);
                     }
                 }
             });
-
 
             // SCHEDULLE
             _projectileJobHandle = _job.Schedule(_transformArray);
@@ -228,6 +262,8 @@ namespace flow____.Combat
         {
             _projectileJobHandle.Complete();
 
+            if (_job._settingHash.IsCreated) _job._settingHash.Dispose();
+
             OnDisposeMotion();
         }
 
@@ -235,6 +271,8 @@ namespace flow____.Combat
         public partial struct ProjectileJob : IJobParallelForTransform
         {
             public float _deltaTime;
+
+            [ReadOnly] public NativeList<int> _settingHash;
 
             public void Execute(int _i, TransformAccess _transform)
             {

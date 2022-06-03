@@ -1013,6 +1013,11 @@ PrefabInstance:
       propertyPath: _camBrain
       value: 
       objectReference: {fileID: 429140442}
+    - target: {fileID: 5233509472353617506, guid: 0affae73fd11f644c8709db51b8f9468,
+        type: 3}
+      propertyPath: isThirdPerson
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5944748374178018288, guid: 0affae73fd11f644c8709db51b8f9468,
         type: 3}
       propertyPath: m_RootOrder
