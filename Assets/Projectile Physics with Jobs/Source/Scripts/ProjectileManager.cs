@@ -32,6 +32,8 @@ namespace flow____.Combat
         {
             public GameObject Projectile;
             public ProjectileData ProjectileData;
+            public GameObject Muzzle_Flash_FX;
+            public object Sender;
         }
 
         public struct UnregisterProjectileResult
@@ -39,12 +41,14 @@ namespace flow____.Combat
             public GameObject ProjectileInSpawnPool;
             public bool SuccessPooling;
             public ProjectileData ProjectileData;
+            public float3 LastKnownVelocity;
+            public float StartVsLastKnowVelocityPercentage01;
         }
 
         [SerializeField] protected ProjectileProfile[] _Profiles = default;
         protected Dictionary<string, ProjectileProfile> _ProfilesHashMap = new Dictionary<string, ProjectileProfile>();
 
-        List<(Transform _projectile, ProjectileData _data, float _registerTime)> toRegisterProjectiles = new List<(Transform _projectile, ProjectileData _data, float _registerTime)>();
+        List<(Transform _projectile, ProjectileData _data, float _registerTime, object _sender)> toRegisterProjectiles = new List<(Transform _projectile, ProjectileData _data, float _registerTime, object _sender)>();
         List<(Transform runtimeProjectile, Action<UnregisterProjectileResult> onDone, float _unregisterTime)> toUnregisterProjectiles = new List<(Transform runtimeProjectile, Action<UnregisterProjectileResult> onDone, float _unregisterTime)>();
 
         protected JobHandle _projectileJobHandle;
@@ -55,11 +59,19 @@ namespace flow____.Combat
         {
             public RaycastHit _hit;
             public UnregisterProjectileResult _unregisterPraticleResult;
+            public GameObject _hit_FX;
+            public float3 lastPrejectileDirection_normalized;
+            public Collider bestMatchHitCollider;
+            public object _sender;
 
-            public ProjectileHitResult(RaycastHit hit, UnregisterProjectileResult unregisterPraticleResult)
+            public ProjectileHitResult(RaycastHit hit, UnregisterProjectileResult unregisterPraticleResult, GameObject _fx, float3 direction, Collider bestCollider, object sender)
             {
+                bestMatchHitCollider = bestCollider;
+                _hit_FX = _fx;
                 _hit = hit;
                 _unregisterPraticleResult = unregisterPraticleResult;
+                _sender = sender;
+                lastPrejectileDirection_normalized = direction;
             }
         }
 
@@ -120,10 +132,21 @@ namespace flow____.Combat
 
         public FireResult Fire(float3 startPosition, float3 forward, GameObject ProjectilePrefab)
         {
+            return Fire(startPosition, forward, ProjectilePrefab, null);
+        }
+
+        public FireResult Fire(float3 startPosition, float3 forward, GameObject ProjectilePrefab, object sender)
+        {
             FireResult result = new FireResult();
+            result.Sender = sender;
             var spawnResult = SpawnProjectile(startPosition, forward, ProjectilePrefab);
             result.Projectile = spawnResult.projectile;
             result.ProjectileData = spawnResult.profile.ProjectileData;
+
+            if (spawnResult.profile.ProjectileData.Muzzle_Flash_FX != null)
+            {
+                result.Muzzle_Flash_FX = Instantiate(spawnResult.profile.ProjectileData.Muzzle_Flash_FX, startPosition, Quaternion.LookRotation(math.normalize(forward)));
+            }
 
             bool contains = false;
             for (int i = 0; i < toRegisterProjectiles.Count; i++)
@@ -134,7 +157,7 @@ namespace flow____.Combat
                     break;
                 }
             }
-            if (contains == false) toRegisterProjectiles.Add((spawnResult.projectile.transform, result.ProjectileData, Time.timeSinceLevelLoad));
+            if (contains == false) toRegisterProjectiles.Add((spawnResult.projectile.transform, result.ProjectileData, Time.timeSinceLevelLoad, sender));
 
             return result;
         }
@@ -197,7 +220,7 @@ namespace flow____.Combat
                     toRegisterProjectiles.RemoveAt(r);
 
                     HandleAddtransformArray(entity._projectile, entity._data);
-                    AddCollisionData(entity._projectile, entity._data);
+                    AddCollisionData(entity._projectile, entity._data, entity._sender);
                 }
 
                 if (_transformArray.isCreated == false) _transformArray = new TransformAccessArray(_projectileTransformToCompute.ToArray());
@@ -222,7 +245,8 @@ namespace flow____.Combat
                     result.ProjectileData = poolResult.profile.ProjectileData;
 
                     int index = _projectileTransformToCompute.IndexOf(entity.runtimeProjectile);
-                    HandleRemoveTransformArray(index);
+                    result.LastKnownVelocity = HandleRemoveTransformArray(index);
+                    result.StartVsLastKnowVelocityPercentage01 = result.LastKnownVelocity.ToMagnitude() / result.ProjectileData.muzzleVelocity_m_per_second;
                     RemoveCollisionData(index);
 
                     entity.onDone?.Invoke(result);

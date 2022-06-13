@@ -22,14 +22,16 @@ namespace flow____.Combat
             }
         }
 
-        void HandleRemoveTransformArray(int index)
+        float3 HandleRemoveTransformArray(int index)
         {
+            float3 vel = float3.zero;
             if (index != -1)
             {
                 _projectileTransformToCompute.RemoveAt(index);
-                HandleDeallocationMotion(index);
+                vel = HandleDeallocationMotion(index);
                 _job._settingHash.RemoveAt(index);
             }
+            return vel;
         }
 
         void HandleAllocationMotion()
@@ -56,15 +58,20 @@ namespace flow____.Combat
             _job.windSpeedVector.Add(default);
         }
 
-        void HandleDeallocationMotion(int index)
+        float3 HandleDeallocationMotion(int index)
         {
+            float3 vel = float3.zero;
+
             _job.airDensity.RemoveAt(index);
+            vel = _job.projectileCurrentVelocity[index];
             _job.projectileCurrentVelocity.RemoveAt(index);
             _job.projectileInitialPosition.RemoveAt(index);
             _job.gravity.RemoveAt(index);
             _job.isFirstFrameOnProjectilePass.RemoveAt(index);
             _job.muzzleVelocity.RemoveAt(index);
             _job.windSpeedVector.RemoveAt(index);
+
+            return vel;
         }
 
         void HandleAssignValuesMotion(ProjectileData _data, int _i)
