@@ -61,12 +61,10 @@ namespace flow____.Combat
             public UnregisterProjectileResult _unregisterPraticleResult;
             public GameObject _hit_FX;
             public float3 lastPrejectileDirection_normalized;
-            public Collider bestMatchHitCollider;
             public object _sender;
 
             public ProjectileHitResult(RaycastHit hit, UnregisterProjectileResult unregisterPraticleResult, GameObject _fx, float3 direction, Collider bestCollider, object sender)
             {
-                bestMatchHitCollider = bestCollider;
                 _hit_FX = _fx;
                 _hit = hit;
                 _unregisterPraticleResult = unregisterPraticleResult;

@@ -24,6 +24,7 @@ namespace flow____.Combat
         public bool AllowHitFromTheSameRootTransformAsSender = false;
         public LayerMask hitLayer;
         public PhysicMaterial[] CollidersWithPhysicsMaterialIgnore;
+        public PhysicMaterial[] CollidersWithPhysicsMaterialHigherPriority;
         [Range(0f, 100f)] public float projectileForceOnImpact = 5f;
         [Range(0f, 100f)] public float projectileDamageOnImpact = 30f;
 

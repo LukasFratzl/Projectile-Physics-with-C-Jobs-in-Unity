@@ -15,18 +15,20 @@ namespace flow____.Combat
             public Transform _runtimeProjectile;
             public LayerMask _hitLayer;
             public List<PhysicMaterial> _toIgnorePhysicsMaterials;
+            public List<PhysicMaterial> _higherPriorityPhysicsMaterials;
             //public RaycastHit[] _hits;
             public object _sender;
             public bool hasHitOnce;
             public bool _allowSelfCollisionOfRoot;
 
-            public CollisionData(Transform runtimeProjectile, LayerMask hitLayer, PhysicMaterial[] toIgnorePhysicsMaterial, bool allowSelfCollisionOfRoot, object sender)
+            public CollisionData(Transform runtimeProjectile, LayerMask hitLayer, PhysicMaterial[] toIgnorePhysicsMaterial, PhysicMaterial[] higherPriorityPhysicsMaterial, bool allowSelfCollisionOfRoot, object sender)
             {
                 _lastPosition = _currentPosition = runtimeProjectile.position;
                 _runtimeProjectile = runtimeProjectile;
                 _hitLayer = hitLayer;
                 _sender = sender;
                 _toIgnorePhysicsMaterials = toIgnorePhysicsMaterial != null ? toIgnorePhysicsMaterial.ToList() : null;
+                _higherPriorityPhysicsMaterials = higherPriorityPhysicsMaterial != null ? higherPriorityPhysicsMaterial.ToList() : null;
                 // _hits = new RaycastHit[_toIgnorePhysicsMaterials != null && _toIgnorePhysicsMaterials.Length > 0 ? _toIgnorePhysicsMaterials.Length + 1 : 1];
                 hasHitOnce = false;
                 _allowSelfCollisionOfRoot = allowSelfCollisionOfRoot;
@@ -39,7 +41,7 @@ namespace flow____.Combat
 
         void AddCollisionData(Transform t, ProjectileData data, object sender)
         {
-            if (_collisionData.Exists(x => x._runtimeProjectile == t) == false) _collisionData.Add(new CollisionData(t, data.hitLayer, data.CollidersWithPhysicsMaterialIgnore, data.AllowHitFromTheSameRootTransformAsSender, sender));
+            if (_collisionData.Exists(x => x._runtimeProjectile == t) == false) _collisionData.Add(new CollisionData(t, data.hitLayer, data.CollidersWithPhysicsMaterialIgnore, data.CollidersWithPhysicsMaterialHigherPriority, data.AllowHitFromTheSameRootTransformAsSender, sender));
         }
 
         void RemoveCollisionData(int index)
@@ -64,36 +66,67 @@ namespace flow____.Combat
 
                 if (hits.Length > 0 && !_data.hasHitOnce)
                 {
+                    bool containsHighPriorityMaterial = false;
+                    float closestHighPriorityColliderDistance = math.INFINITY;
+                    for (int h = 0; h < hits.Length; h++)
+                    {
+                        Collider collider = hits[h].collider;
+
+                        if (collider.material != null && _data._toIgnorePhysicsMaterials != null)
+                        {
+                            bool isHighByName = _data._higherPriorityPhysicsMaterials.Exists(x => collider.material.name.Contains(x.name));
+                            bool isHighByRef = _data._higherPriorityPhysicsMaterials.Contains(collider.material);
+
+                            if (isHighByName || isHighByRef)
+                            {
+                                containsHighPriorityMaterial = true;
+
+                                float d = hits[h].distance;
+                                if (d < closestHighPriorityColliderDistance)
+                                {
+                                    closestHighPriorityColliderDistance = d;
+                                }
+
+                            }
+                        }
+                    }
+
                     RaycastHit _hit = default;
                     Collider _validCollider = null;
                     float distance = math.INFINITY;
+
+                    MonoBehaviour s = (_data._sender as MonoBehaviour);
+                    Transform senderRoot = s != null ? s.transform.root : null;
+
                     for (int h = 0; h < hits.Length; h++)
                     {
-                        Collider[] _colliders = hits[h].collider.GetComponents<Collider>();
-                        MonoBehaviour s = (_data._sender as MonoBehaviour);
-                        Transform senderRoot = s != null ? s.transform.root : null;
-                        for (int c = 0; c < _colliders.Length; c++)
+                        Transform colliderRoot = hits[h].transform.root;
+                        Collider collider = hits[h].collider;
+
+                        bool isSelfCollision = senderRoot != null && senderRoot == colliderRoot;
+                        bool isWrongMaterial = false;
+                        if (collider.material != null && _data._toIgnorePhysicsMaterials != null)
                         {
-                            Collider collider = _colliders[c];
-                            Transform colliderRoot = collider.transform.root;
+                            bool isNotAllowedByName = _data._toIgnorePhysicsMaterials.Exists(x => collider.material.name.Contains(x.name));
+                            bool isNotAllowByRef = _data._toIgnorePhysicsMaterials.Contains(collider.material);
 
-                            bool isSelfCollision = senderRoot != null && senderRoot == colliderRoot;
-                            bool isWrongMaterial = false;
-                            if (collider.material != null && _data._toIgnorePhysicsMaterials != null)
+                            if (isNotAllowedByName || isNotAllowByRef) isWrongMaterial = true;
+
+                            if (!isWrongMaterial && containsHighPriorityMaterial && closestHighPriorityColliderDistance < hits[h].distance)
                             {
-                                bool isNotAllowedByName = _data._toIgnorePhysicsMaterials.Exists(x => collider.material.name.Contains(x.name));
-                                bool isNotAllowByRef = _data._toIgnorePhysicsMaterials.Contains(collider.material);
+                                bool isHighByName = _data._higherPriorityPhysicsMaterials.Exists(x => collider.material.name.Contains(x.name));
+                                bool isHighByRef = _data._higherPriorityPhysicsMaterials.Contains(collider.material);
 
-                                if (isNotAllowedByName || isNotAllowByRef) isWrongMaterial = true;
+                                if (!isHighByName && !isHighByRef) isWrongMaterial = true;
                             }
+                        }
 
-                            bool valid = (!isSelfCollision && _data._allowSelfCollisionOfRoot == false || _data._allowSelfCollisionOfRoot) && !isWrongMaterial;
-                            if (valid && hits[h].distance < distance)
-                            {
-                                distance = hits[h].distance;
-                                _validCollider = collider;
-                                _hit = hits[h];
-                            }
+                        bool valid = (!isSelfCollision && _data._allowSelfCollisionOfRoot == false || _data._allowSelfCollisionOfRoot) && !isWrongMaterial;
+                        if (valid && hits[h].distance < distance)
+                        {
+                            distance = hits[h].distance;
+                            _hit = hits[h];
+                            _validCollider = collider;
                         }
                     }
 
@@ -119,7 +152,7 @@ namespace flow____.Combat
                                                         }
                                                     }
                                                 }
-                                                if (_fx != null)
+                                                if (_fx == null && result.ProjectileData.FallBackHit_FX != null)
                                                 {
                                                     _fx = Instantiate(result.ProjectileData.FallBackHit_FX, _hit.point, Quaternion.LookRotation(_hit.normal));
                                                 }
